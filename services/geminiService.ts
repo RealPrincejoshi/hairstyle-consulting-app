@@ -1,10 +1,6 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { AnalysisResult } from "../types";
 
-// Initialize Gemini Client
-// Note: process.env.API_KEY is injected by the runtime environment.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 // Model Constants
 const ANALYSIS_MODEL = "gemini-2.5-flash";
 const GENERATION_MODEL = "gemini-2.5-flash-image"; 
@@ -33,11 +29,43 @@ const analysisSchema: Schema = {
   required: ["faceShape", "suggestions"],
 };
 
+// Helper to safely get the client
+const getAiClient = () => {
+  // Attempt to find the key from standard env or Vite env
+  let apiKey: string | undefined;
+  
+  try {
+    // Check process.env (standard/webpack)
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      apiKey = process.env.API_KEY;
+    } 
+    // Check import.meta.env (Vite) - using loose access to prevent build errors if not using Vite
+    else if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_KEY) {
+      apiKey = (import.meta as any).env.VITE_API_KEY;
+    }
+  } catch (e) {
+    // Ignore access errors
+  }
+
+  // Fallback if specific build tools inject it differently
+  if (!apiKey && typeof process !== 'undefined' && process.env) {
+      apiKey = process.env.API_KEY;
+  }
+
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please check your .env file or environment configuration.");
+  }
+
+  return new GoogleGenAI({ apiKey });
+};
+
 /**
  * Analyzes the face in the provided base64 image strings (Front, Left, Right).
  */
 export const analyzeFace = async (base64Images: string[]): Promise<AnalysisResult> => {
   try {
+    const ai = getAiClient();
+    
     const parts = base64Images.map(img => ({
       inlineData: {
         mimeType: "image/jpeg",
@@ -81,16 +109,17 @@ export const generateHairstyleImage = async (
   hairstyleName: string,
   hairstyleDescription: string
 ): Promise<string> => {
-  const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
-
-  const prompt = `
-    Transform this image: The person in the photo is now wearing a ${hairstyleName}.
-    ${hairstyleDescription}.
-    CRITICAL: Keep the person's facial features, expression, skin tone, and head pose EXACTLY the same as the original image. 
-    Only change the hair. High quality, photorealistic portrait.
-  `;
-
   try {
+    const ai = getAiClient();
+    const cleanBase64 = base64Image.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+
+    const prompt = `
+      Transform this image: The person in the photo is now wearing a ${hairstyleName}.
+      ${hairstyleDescription}.
+      CRITICAL: Keep the person's facial features, expression, skin tone, and head pose EXACTLY the same as the original image. 
+      Only change the hair. High quality, photorealistic portrait.
+    `;
+
     const response = await ai.models.generateContent({
       model: GENERATION_MODEL,
       contents: {
