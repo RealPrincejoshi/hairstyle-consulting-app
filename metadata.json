@@ -1,0 +1,7 @@
+{
+  "name": "StyleAI: Hairstyle Consultant",
+  "description": "An AI-powered stylist that analyzes your face shape and generates personalized hairstyle visualizations.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "short_name": "StyleAI",
+  "name": "StyleAI: Hairstyle Consultant",
+  "icons": [
+    {
+      "src": "https://fonts.gstatic.com/s/i/materialicons/face/v12/24px.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0f0f0f",
+  "background_color": "#0f0f0f",
+  "orientation": "portrait"
+}
